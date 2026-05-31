@@ -20,7 +20,7 @@ from config.tickers import SYMBOL_CIK_MAP
 logger = logging.getLogger(__name__)
 
 try:
-    import pandas as pad
+    import pandas as pd
     from sklearn.metrics import accuracy_score, classification_report
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import OrdinalEncoder
@@ -70,7 +70,7 @@ class XGBoostModel:
     # Data fetching
     # ------------------------------------------------------------------
 
-    def fetch_stock_news_features(self) -> pad.DataFrame:
+    def fetch_stock_news_features(self) -> pd.DataFrame:
         """Return per-stock news features drawn from the 31-90 day window."""
         if not self._dependencies_ready():
             return self._empty_frame()
@@ -102,13 +102,13 @@ class XGBoostModel:
             rows = [record.data() for record in result]
 
         if not rows:
-            return pad.DataFrame()
+            return pd.DataFrame()
 
         df = pd.DataFrame(rows)
         df["avg_sentiment"] = df["avg_sentiment"].astype(float)
         return df
 
-    def fetch_insider_labels(self, df: pad.DataFrame) -> pad.Series:
+    def fetch_insider_labels(self, df: pd.DataFrame) -> pd.Series:
         """Return a binary buy-signal for each stock based on the last 30 days."""
         if not self._dependencies_ready():
             return None
@@ -146,8 +146,8 @@ class XGBoostModel:
     # ------------------------------------------------------------------
 
     def build_feature_matrix(
-        self, df: pad.DataFrame, *, fit: bool = False
-    ) -> pad.DataFrame:
+        self, df: pd.DataFrame, *, fit: bool = False
+    ) -> pd.DataFrame:
         """Convert raw rows into the numeric matrix expected by XGBoost."""
         if not self._dependencies_ready():
             return self._empty_frame()
@@ -225,17 +225,17 @@ class XGBoostModel:
     # Post-training utilities
     # ------------------------------------------------------------------
 
-    def get_feature_importances(self) -> pad.DataFrame:
+    def get_feature_importances(self) -> pd.DataFrame:
         if not self._dependencies_ready():
             return self._empty_frame()
 
         if self.model is None or self.feature_df is None:
-            return pad.DataFrame()
+            return pd.DataFrame()
 
         feature_names = ["news_count", "avg_sentiment", "sector_encoded"]
         importances = self.model.feature_importances_
         return (
-            pad.DataFrame({"feature": feature_names, "importance": importances})
+            pd.DataFrame({"feature": feature_names, "importance": importances})
             .sort_values(by="importance", ascending=False)
             .reset_index(drop=True)
         )

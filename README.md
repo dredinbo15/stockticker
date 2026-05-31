@@ -1,6 +1,6 @@
 # Stock Tracking and Modeling System
 
-A multi-source data engineering platform that takes news, SEC filings, weather, and price data into a Neo4j graph, enriches news with LLM-based analysis, and trains a XGBoost models on resulting feature set. Built to explore the data engineering and ML modeling stack used by quant firms.
+A multi-source data engineering platform that ingests news, SEC filings, weather, and price data into a Neo4j graph, enriches news with LLM-based analysis, and trains an XGBoost model on resulting feature set. Built to explore the data engineering and ML modeling stack used by quant firms.
 
 ## Architecture
 
