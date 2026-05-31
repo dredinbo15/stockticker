@@ -63,9 +63,9 @@ All tickers are defined in [config/tickers.py](config/tickers.py) with their SEC
 pip install -r requirements.txt
 ```
 
-4. **Configure credentials (encrypted)**:
-
-The application uses .env for credentials 
+4. **Configure credentials**: Copy `.env.example` to `.env` and fill in your credentials:
+```bash
+cp .env.example .env
 
 5. **Install and start Redis** (for queue system):
 ```bash
@@ -101,52 +101,6 @@ streamlit run streamlit_app.py
 - `POST /api/collect/weather`: Trigger weather data collection
 - `POST /api/collect/news`: Trigger news collection and enrichment
 - `POST /api/collect/sec`: Trigger SEC Form 4 data collection
-
-## Credential Management
-
-The application uses Fernet symmetric encryption to securely store credentials.
-
-### How It Works
-
-1. **Encryption Key**: Generated and stored in `.credentials_key` (automatically created on first use)
-2. **Encrypted Credentials**: Stored in `.encrypted_credentials.json`
-3. **Fallback**: If encrypted credentials are not found, the system will check environment variables
-
-### Credential CLI Commands
-
-```bash
-# Encrypt all credentials from environment variables
-python credentials_cli.py encrypt-env
-
-# Encrypt a single credential
-python credentials_cli.py encrypt KEY value
-
-# Decrypt and display a credential (for verification)
-python credentials_cli.py decrypt KEY
-
-# List all encrypted credential keys
-python credentials_cli.py list
-
-# Show encryption key location
-python credentials_cli.py show-key
-```
-
-### Security Best Practices
-
-⚠️ **IMPORTANT**: Keep `.credentials_key` safe and secret!
-- Add `.credentials_key` and `.encrypted_credentials.json` to `.gitignore` (already included)
-- Never commit these files to version control
-- Store the `.credentials_key` in a secure location (e.g., key management system, vault)
-- Rotate credentials regularly
-- Use different credentials for different environments (dev, staging, prod)
-
-### Deployment Considerations
-
-For production deployments:
-1. Generate and securely store the `.credentials_key` on the deployment server
-2. Set encrypted credentials via environment variables during deployment
-3. Use a secrets management system (AWS Secrets Manager, HashiCorp Vault, etc.)
-4. Implement key rotation policies
 
 ## Database Schema
 
