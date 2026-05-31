@@ -5,7 +5,6 @@ SEC 8-K filing model for significant event reports.
 import hashlib
 from config.database import get_neo4j_session
 from datetime import datetime
-from typing import Dict, List
 
 
 class SEC8K:

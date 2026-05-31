@@ -5,7 +5,6 @@ SEC Form 4 data model for insider trading information.
 import hashlib
 from config.database import get_neo4j_session
 from datetime import datetime
-from typing import Dict, List
 
 
 class SECForm4:

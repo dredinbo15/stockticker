@@ -185,29 +185,6 @@ class WeatherData:
             confidence -= min(self.day_out * 0.08, 0.4)
         return round(max(confidence, 0.0), 3)
 
-    def to_dict(self) -> Dict[str, object]:
-        return {
-            "location": self.location,
-            "state": self.state,
-            "record_type": self.record_type,
-            "temperature": self.temperature,
-            "humidity": self.humidity,
-            "conditions": self.conditions,
-            "timestamp": self.timestamp.isoformat(),
-            "forecast_date": self.forecast_date.isoformat() if self.forecast_date else None,
-            "day_out": self.day_out,
-            "season": self.season,
-            "seasonal_bias_temperature": self.seasonal_bias_temperature,
-            "seasonal_bias_humidity": self.seasonal_bias_humidity,
-            "day_out_bias_temperature": self.day_out_bias_temperature,
-            "day_out_bias_humidity": self.day_out_bias_humidity,
-            "state_bias_temperature": self.state_bias_temperature,
-            "state_bias_humidity": self.state_bias_humidity,
-            "adjusted_temperature": self.adjusted_temperature,
-            "adjusted_humidity": self.adjusted_humidity,
-            "confidence": self.confidence,
-        }
-
     def save(self):
         with get_neo4j_session() as session:
             query = """
@@ -258,12 +235,3 @@ class WeatherData:
             )
             return result.single()
 
-    @staticmethod
-    def get_weather_by_location(location: str, limit: int = 10):
-        with get_neo4j_session() as session:
-            query = """
-            MATCH (w:WeatherData {location: $location})
-            RETURN w ORDER BY w.timestamp DESC LIMIT $limit
-            """
-            result = session.run(query, location=location, limit=limit)
-            return [record["w"] for record in result]

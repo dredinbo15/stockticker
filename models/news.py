@@ -5,7 +5,7 @@ News data model with LLM enrichment.
 import hashlib
 from config.database import get_neo4j_session
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import List
 
 class NewsArticle:
     def __init__(self, title: str, content: str, source: str, url: str = None,
@@ -77,12 +77,3 @@ class NewsArticle:
             result = session.run(query, symbol=symbol, limit=limit)
             return [record["n"] for record in result]
 
-    @staticmethod
-    def get_recent_news(limit: int = 20):
-        with get_neo4j_session() as session:
-            query = """
-            MATCH (n:NewsArticle)
-            RETURN n ORDER BY n.published_date DESC LIMIT $limit
-            """
-            result = session.run(query, limit=limit)
-            return [record["n"] for record in result]
