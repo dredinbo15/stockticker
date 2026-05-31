@@ -10,12 +10,11 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from queues.sec_8k_queue import SEC8KQueue
 from models.sec_8k import SEC8K
-from config.credentials import get_credentials_manager
+import os
 
 logger = logging.getLogger(__name__)
 
-creds = get_credentials_manager()
-_USER_AGENT = creds.get_credential('SEC_USER_AGENT', 'SEC_USER_AGENT', "stockticker contact@example.com")
+_USER_AGENT = os.getenv('SEC_USER_AGENT', "stockticker contact@example.com")
 _HEADERS = {"User-Agent": _USER_AGENT, "Accept-Encoding": "gzip, deflate"}
 
 

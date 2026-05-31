@@ -7,17 +7,17 @@ import logging
 import time
 import requests
 from datetime import datetime, timezone
+import os
+
 from queues.weather_queue import WeatherQueue
 from models.weather import WeatherData
-from config.credentials import get_credentials_manager
 
 logger = logging.getLogger(__name__)
 
 
 class WeatherModule:
     def __init__(self):
-        creds = get_credentials_manager()
-        self.api_key = creds.get_credential('OPENWEATHER_API_KEY', 'OPENWEATHER_API_KEY')
+        self.api_key = os.getenv('OPENWEATHER_API_KEY')
         self.base_url = "http://api.openweathermap.org/data/2.5/weather"
         self.queue = WeatherQueue()
 

@@ -11,11 +11,10 @@ logger = logging.getLogger(__name__)
 from queues.sec_form4_queue import SECForm4Queue
 from models.sec_form4 import SECForm4
 import xml.etree.ElementTree as ET
-from config.credentials import get_credentials_manager
+import os
 
 # SEC requires a descriptive User-Agent per their crawling policy
-creds = get_credentials_manager()
-_USER_AGENT = creds.get_credential('SEC_USER_AGENT', 'SEC_USER_AGENT', "stockticker contact@example.com")
+_USER_AGENT = os.getenv('SEC_USER_AGENT', "stockticker contact@example.com")
 _HEADERS = {"User-Agent": _USER_AGENT, "Accept-Encoding": "gzip, deflate"}
 
 

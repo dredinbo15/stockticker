@@ -8,17 +8,17 @@ import logging
 import time
 import requests
 from datetime import datetime
+import os
+
 from queues.news_queue import NewsQueue
 from models.news import NewsArticle
-from config.credentials import get_credentials_manager
 
 logger = logging.getLogger(__name__)
 
 
 class NewsModule:
     def __init__(self):
-        creds = get_credentials_manager()
-        self.api_key = creds.get_credential('NEWS_API_KEY', 'NEWS_API_KEY')
+        self.api_key = os.getenv('NEWS_API_KEY')
         self.base_url = "https://newsapi.org/v2/everything"
         self.queue = NewsQueue()
 

@@ -2,11 +2,14 @@
 Celery configuration for the queue system.
 """
 
-from celery import Celery
-from config.credentials import get_credentials_manager
+import os
 
-creds = get_credentials_manager()
-redis_url = creds.get_credential('REDIS_URL', 'REDIS_URL', 'redis://localhost:6379/0')
+from celery import Celery
+from dotenv import load_dotenv
+
+load_dotenv()
+
+redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 
 app = Celery('stock_tracker',
              broker=redis_url,

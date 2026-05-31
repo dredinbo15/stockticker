@@ -8,19 +8,17 @@ import logging
 import re
 from typing import Any, Dict
 
-from openai import AsyncOpenAI
+import os
 
-from config.credentials import get_credentials_manager
+from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
 
 class LLMProcessor:
     def __init__(self):
-        creds = get_credentials_manager()
-        api_key = creds.get_credential("OPENAI_API_KEY", "OPENAI_API_KEY")
-        self.client = AsyncOpenAI(api_key=api_key)
-        self.model = creds.get_credential("OPENAI_MODEL", "OPENAI_MODEL", "gpt-4o-mini")
+        self.client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
     @staticmethod
     def _parse_json_payload(payload: str) -> Dict[str, Any]:

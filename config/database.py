@@ -1,19 +1,19 @@
 """Database configuration for Neo4j connection."""
 
+import os
+
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
-from config.credentials import get_credentials_manager
 
 load_dotenv()
 
 class Neo4jConnection:
     def __init__(self):
-        creds = get_credentials_manager()
-        self.uri = creds.get_credential('NEO4J_URI', 'NEO4J_URI', "bolt://localhost:7687")
-        self.user = creds.get_credential('NEO4J_USER', 'NEO4J_USER', "neo4j")
-        self.password = creds.get_credential('NEO4J_PASSWORD', 'NEO4J_PASSWORD')
+        self.uri = os.getenv('NEO4J_URI', "bolt://localhost:7687")
+        self.user = os.getenv('NEO4J_USER', "neo4j")
+        self.password = os.getenv('NEO4J_PASSWORD')
         if not self.password:
-            raise EnvironmentError("NEO4J_PASSWORD not found in encrypted credentials or environment variables.")
+            raise EnvironmentError("NEO4J_PASSWORD not found in environment variables.")
         self.driver = None
 
     def connect(self):
