@@ -13,7 +13,10 @@ A comprehensive Neo4j-based stock tracking and modeling application using MVC ar
 - **Weather Module**: Collects weather data for correlation analysis
 - **News Module**: Fetches news articles with LLM enrichment
 - **SEC Form 4 Module**: Processes insider trading data
+- **SEC 8-k module**: Process 8-ks
+- **Pricing**: Pulls pricing info for stocks
 - **LLM Enrichment**: Uses OpenAI for sentiment analysis and content enrichment
+- **Modelling**: models futures for stocks
 
 ### Queue System
 - Uses Celery with Redis for asynchronous data processing
@@ -109,7 +112,7 @@ python main.py
 
 2. Start the Celery worker:
 ```bash
-celery -A queue.celery_app worker --loglevel=info
+celery -A queues.celery_app worker --loglevel=info
 ```
 
 4. Run the Streamlit dashboard:
