@@ -1,6 +1,6 @@
 # Stock Tracking and Modeling System
 
-A comprehensive Neo4j-based stock tracking and modeling application using MVC architecture that monitors 50 major US stock tickers with separate modules for weather, news, and SEC Form 4/8-K data collection.
+A multi-source data engineering platform that takes news, SEC filings, weather, and price data into a Neo4j graph, enriches news with LLM-based analysis, and trains a XGBoost models on resulting feature set. Built to explore the data engineering and ML modeling stack used by quant firms.
 
 ## Architecture
 
@@ -188,4 +188,3 @@ For production deployments:
 ## Development
 
 Each module is self-contained and can be developed independently. The queue system ensures data processing doesn't block the main application.
-5/30/26- working through the a walking skeleton of the project trying to decide between one model or per sector model. cleanning code up working on solidifying pipeline to ensure continous ability to run and good error handling prior to delving deeper into each model. fixing .env files so they dont appear on github.
