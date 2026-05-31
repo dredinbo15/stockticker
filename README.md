@@ -65,35 +65,7 @@ pip install -r requirements.txt
 
 4. **Configure credentials (encrypted)**:
 
-The application uses encrypted credential storage for enhanced security. You have two options:
-
-**Option A: Encrypt from environment variables**
-```bash
-# First, set your credentials in .env or environment
-export NEO4J_PASSWORD=your_password
-export OPENAI_API_KEY=your_key
-# ... (set all required credentials)
-
-# Then encrypt them
-python credentials_cli.py encrypt-env
-```
-
-**Option B: Manually encrypt each credential**
-```bash
-python credentials_cli.py encrypt NEO4J_PASSWORD your_password
-python credentials_cli.py encrypt OPENAI_API_KEY your_key
-# ... (repeat for each credential)
-```
-
-**Required encrypted credentials**:
-- `NEO4J_URI` (default: `bolt://localhost:7687`)
-- `NEO4J_USER` (default: `neo4j`)
-- `NEO4J_PASSWORD` (required)
-- `OPENAI_API_KEY` (required for LLM enrichment)
-- `NEWS_API_KEY` (required for news collection)
-- `OPENWEATHER_API_KEY` (required for weather collection)
-- `REDIS_URL` (default: `redis://localhost:6379/0`)
-- `SEC_USER_AGENT` (optional, for SEC API calls)
+The application uses .env for credentials 
 
 5. **Install and start Redis** (for queue system):
 ```bash
