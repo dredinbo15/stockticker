@@ -49,6 +49,18 @@ def init_neo4j():
         session.run("CREATE INDEX stock_name IF NOT EXISTS FOR (s:Stock) ON (s.name)")
         session.run("CREATE INDEX weather_location IF NOT EXISTS FOR (w:WeatherData) ON (w.location)")
         session.run("CREATE INDEX transaction_date IF NOT EXISTS FOR (t:Transaction) ON (t.date)")
+        # Seed the tracked tickers as Stock nodes (with their sector) so news
+        # MENTIONS edges and the model's (s:Stock) matches have something to
+        # attach to before any price-collection job has run.
+        from config.tickers import SYMBOL_SECTOR_MAP
+        session.run(
+            """
+            UNWIND $rows AS row
+            MERGE (s:Stock {symbol: row.symbol})
+            SET s.sector = coalesce(s.sector, row.sector)
+            """,
+            rows=[{"symbol": sym, "sector": sec} for sym, sec in SYMBOL_SECTOR_MAP.items()],
+        )
 
 def get_neo4j_session():
     return neo4j_conn.get_session()

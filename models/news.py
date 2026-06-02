@@ -43,9 +43,11 @@ class NewsArticle:
                 n.content = $content,
                 n.source = $source,
                 n.published_date = $published_date,
+                n.url = $url
+            SET
                 n.sentiment = $sentiment,
                 n.enriched_content = $enriched_content,
-                n.url = $url
+                n.related_stocks = $related_stocks
             RETURN n
             """
             result = session.run(query,
@@ -56,6 +58,7 @@ class NewsArticle:
                                published_date=self.published_date.isoformat(),
                                sentiment=self.sentiment,
                                enriched_content=self.enriched_content,
+                               related_stocks=self.related_stocks,
                                url=self.url)
             article_node = result.single()["n"]
 

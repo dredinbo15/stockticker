@@ -3,7 +3,6 @@ News data collection module.
 Fetches news articles and feeds them through LLM enrichment before queuing.
 """
 
-import asyncio
 import logging
 import time
 import requests
@@ -51,7 +50,7 @@ class NewsModule:
             published_date=datetime.fromisoformat(article_data["publishedAt"].replace("Z", "+00:00")),
         )
 
-    async def collect_and_process_news(self, queries: list):
+    def collect_and_process_news(self, queries: list):
         for query in queries:
             try:
                 raw_data = self.fetch_news(query)
@@ -69,4 +68,4 @@ class NewsModule:
 
 if __name__ == "__main__":
     news_module = NewsModule()
-    asyncio.run(news_module.collect_and_process_news(["AAPL stock", "TSLA news"]))
+    news_module.collect_and_process_news(["AAPL stock", "TSLA news"])

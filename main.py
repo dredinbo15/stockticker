@@ -172,7 +172,7 @@ async def collect_weather_forecast(save: bool = False):
 @app.post("/api/collect/news", response_model=CollectResponse)
 async def collect_news():
     queries = ["stocks", "finance", "market analysis"]
-    asyncio.create_task(news_module.collect_and_process_news(queries))
+    asyncio.create_task(asyncio.to_thread(news_module.collect_and_process_news, queries))
     return CollectResponse(message="News collection and enrichment started", details={"queries": queries})
 
 

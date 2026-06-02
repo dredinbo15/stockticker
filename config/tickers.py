@@ -83,12 +83,50 @@ SYMBOL_CIK_MAP = {
 # List of all ticker symbols (50 total)
 TICKER_SYMBOLS = sorted(SYMBOL_CIK_MAP.keys())
 
+# Sector groupings for the tracked tickers — the source of truth for
+# Stock.sector (the SYMBOL_CIK_MAP comments above are illustrative only).
+SECTOR_SYMBOLS = {
+    "Information Technology": ["AAPL", "MSFT", "NVDA", "AVGO", "CSCO"],
+    "Communication Services": ["GOOGL", "META", "NFLX", "DIS"],
+    "Consumer Discretionary": ["AMZN", "TSLA", "HD", "NKE", "MCD"],
+    "Consumer Staples": ["WMT", "PG", "KO", "COST"],
+    "Financials": ["JPM", "BAC", "GS", "V", "MA"],
+    "Healthcare": ["JNJ", "UNH", "LLY", "PFE", "ABBV"],
+    "Industrials": ["CAT", "BA", "GE", "UPS", "RTX"],
+    "Energy": ["XOM", "CVX", "COP", "SLB"],
+    "Materials": ["LIN", "FCX", "NEM"],
+    "Utilities": ["NEE", "DUK", "SO"],
+    "Real Estate": ["PLD", "AMT", "EQIX"],
+    "Transportation/Rails": ["UNP", "CSX", "NSC", "FDX"],
+}
+
+# Reverse lookup: symbol -> sector
+SYMBOL_SECTOR_MAP = {
+    symbol: sector
+    for sector, symbols in SECTOR_SYMBOLS.items()
+    for symbol in symbols
+}
+
 # Sentiment mapping for enrichment
 SENTIMENT_MAP = {
     "positive": 1,
     "neutral": 0,
     "negative": -1,
 }
+
+
+def normalize_cik(cik) -> str:
+    """Return the canonical CIK form: digits with leading zeros stripped.
+
+    SEC EDGAR returns CIKs zero-padded to 10 digits (e.g. '0000320193') in
+    filing XML and the submissions API, while SYMBOL_CIK_MAP stores the
+    unpadded form ('320193'). Normalizing everywhere ensures Company nodes,
+    SEC lookups, and the model's insider labels all join on the same value.
+    """
+    if cik is None:
+        return None
+    digits = str(cik).strip().lstrip("0")
+    return digits or "0"
 
 
 def get_all_ciks():
@@ -112,3 +150,8 @@ def get_symbol_from_cik(cik: str) -> str:
         if c == cik:
             return symbol
     return None
+
+
+def get_sector(symbol: str) -> str:
+    """Get the sector for a stock symbol, or None if untracked."""
+    return SYMBOL_SECTOR_MAP.get(symbol.upper())

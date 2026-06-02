@@ -4,6 +4,7 @@ SEC 8-K filing model for significant event reports.
 
 import hashlib
 from config.database import get_neo4j_session
+from config.tickers import normalize_cik
 from datetime import datetime
 
 
@@ -13,7 +14,7 @@ class SEC8K:
                  form_url: str = None, report_hash: str = None,
                  llm_summary: str = None, key_items: str = None,
                  impact_assessment: str = None):
-        self.issuer_cik = issuer_cik
+        self.issuer_cik = normalize_cik(issuer_cik)
         self.issuer_name = issuer_name
         self.filing_date = filing_date
         self.description = description
@@ -48,7 +49,8 @@ class SEC8K:
                 r.description = $description,
                 r.item_summary = $item_summary,
                 r.content = $content,
-                r.form_url = $form_url,
+                r.form_url = $form_url
+            SET
                 r.llm_summary = $llm_summary,
                 r.key_items = $key_items,
                 r.impact_assessment = $impact_assessment
@@ -76,5 +78,5 @@ class SEC8K:
             MATCH (r:EightKReport)-[:ABOUT_COMPANY]->(c:Company {cik: $cik})
             RETURN r ORDER BY r.filing_date DESC LIMIT $limit
             """
-            result = session.run(query, cik=cik, limit=limit)
+            result = session.run(query, cik=normalize_cik(cik), limit=limit)
             return [record["r"] for record in result]

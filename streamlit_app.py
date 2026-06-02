@@ -5,7 +5,7 @@ from models.news import NewsArticle
 from models.sec_form4 import SECForm4
 from models.sec_8k import SEC8K
 from modules.modeling.xgboost_model import XGBoostModel
-from config.tickers import SYMBOL_CIK_MAP
+from config.tickers import SYMBOL_CIK_MAP, SYMBOL_SECTOR_MAP
 
 
 def node_to_dict(node):
@@ -103,13 +103,30 @@ def main():
     st.title("StockTicker Streamlit Dashboard")
     st.write("A simple dashboard for stocks, enriched news, SEC Form 4 activity, and XGBoost modeling.")
 
-    init_neo4j()
+    try:
+        init_neo4j()
+    except Exception as exc:
+        st.error(f"Could not connect to Neo4j: {exc}. Ensure the database is running and credentials are set.")
+        st.stop()
 
     stocks = load_stocks()
-    symbols = [stock["symbol"] for stock in stocks]
+    # Fall back to the static sector map for any node that lacks a sector.
+    for stock in stocks:
+        if not stock.get("sector"):
+            stock["sector"] = SYMBOL_SECTOR_MAP.get(stock["symbol"], "Unknown")
 
     sidebar = st.sidebar
     sidebar.header("Filters")
+
+    sectors = sorted({stock["sector"] for stock in stocks})
+    selected_sector = sidebar.selectbox("Sector", ["All"] + sectors)
+    filtered_stocks = (
+        stocks
+        if selected_sector == "All"
+        else [s for s in stocks if s["sector"] == selected_sector]
+    )
+
+    symbols = [stock["symbol"] for stock in filtered_stocks]
     selected_stock = sidebar.selectbox("Select stock symbol", symbols)
     cik_options = [f"{v} ({k})" for k, v in SYMBOL_CIK_MAP.items()]
     selected_cik_display = sidebar.selectbox("SEC company (CIK)", cik_options)
@@ -120,6 +137,24 @@ def main():
         if selected_stock_data and selected_stock_data.get("price") is not None:
             st.metric("Latest price", f"${selected_stock_data['price']:.2f}")
 
+    st.subheader("Stocks by Sector")
+    grouped = {}
+    for stock in filtered_stocks:
+        grouped.setdefault(stock["sector"], []).append(stock)
+    if not grouped:
+        st.info("No stocks found.")
+    for sector in sorted(grouped):
+        sector_stocks = sorted(grouped[sector], key=lambda s: s["symbol"])
+        st.markdown(f"**{sector}** ({len(sector_stocks)})")
+        st.table([
+            {
+                "Symbol": s["symbol"],
+                "Name": s.get("name") or "—",
+                "Price": f"${s['price']:.2f}" if s.get("price") is not None else "—",
+                "Last Updated": s.get("price_timestamp") or "—",
+            }
+            for s in sector_stocks
+        ])
 
     if selected_stock:
         st.subheader(f"News for {selected_stock}")

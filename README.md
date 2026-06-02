@@ -16,7 +16,7 @@ A multi-source data engineering platform that ingests news, SEC filings, weather
 - **SEC 8-k module**: Process 8-ks
 - **Pricing**: Pulls pricing info for stocks
 - **LLM Enrichment**: Uses OpenAI for sentiment analysis and content enrichment
-- **Modelling**: models futures for stocks
+- **Modelling**: Trains an XGBoost model to predict insider-buy signals for stocks
 
 ### Queue System
 - Uses Celery with Redis for asynchronous data processing
@@ -63,9 +63,10 @@ All tickers are defined in [config/tickers.py](config/tickers.py) with their SEC
 pip install -r requirements.txt
 ```
 
-4. **Configure credentials**: Copy `.env.example` to `.env` and fill in your credentials:
+4. **Configure environment variables**: Copy `.env.example` to `.env` and fill in your values:
 ```bash
 cp .env.example .env
+```
 
 5. **Install and start Redis** (for queue system):
 ```bash
@@ -87,20 +88,27 @@ python main.py
 celery -A queues.celery_app worker --loglevel=info
 ```
 
-4. Run the Streamlit dashboard:
+3. Run the Streamlit dashboard:
 ```bash
 streamlit run streamlit_app.py
 ```
 
-5. Access the API at `http://localhost:8000`
+4. Access the API at `http://localhost:8000`
 
 ## API Endpoints
 
 - `GET /`: API information
 - `GET /stocks`: List all stocks
 - `POST /api/collect/weather`: Trigger weather data collection
+- `POST /api/collect/weather/forecast`: Generate a 5-day weather forecast
 - `POST /api/collect/news`: Trigger news collection and enrichment
 - `POST /api/collect/sec`: Trigger SEC Form 4 data collection
+- `POST /api/collect/sec8k`: Trigger SEC 8-K data collection
+- `POST /api/collect/prices`: Trigger stock price collection
+- `POST /api/model/train`: Train (or retrain) the XGBoost model
+- `GET /api/model/metrics`: Latest training metrics
+- `GET /api/model/features`: Feature importances
+- `GET /api/model/predict/{symbol}`: Insider-buy prediction for a symbol
 
 ## Database Schema
 

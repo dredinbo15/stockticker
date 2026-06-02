@@ -4,6 +4,7 @@ SEC Form 4 data model for insider trading information.
 
 import hashlib
 from config.database import get_neo4j_session
+from config.tickers import normalize_cik
 from datetime import datetime
 
 
@@ -13,9 +14,9 @@ class SECForm4:
                  transaction_code: str, shares: int, price: float = None,
                  security_title: str = None, transaction_type: str = None,
                  ownership_nature: str = None, form_url: str = None):
-        self.issuer_cik = issuer_cik
+        self.issuer_cik = normalize_cik(issuer_cik)
         self.issuer_name = issuer_name
-        self.reporter_cik = reporter_cik
+        self.reporter_cik = normalize_cik(reporter_cik)
         self.reporter_name = reporter_name
         self.transaction_date = transaction_date
         self.transaction_code = transaction_code
@@ -94,5 +95,5 @@ class SECForm4:
             MATCH (r:Insider)-[:FILED]->(t:Transaction)-[:FOR_COMPANY]->(c:Company {cik: $cik})
             RETURN r.name AS insider, t ORDER BY t.date DESC LIMIT $limit
             """
-            result = session.run(query, cik=cik, limit=limit)
+            result = session.run(query, cik=normalize_cik(cik), limit=limit)
             return [record.data() for record in result]
