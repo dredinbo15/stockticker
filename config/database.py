@@ -1,5 +1,6 @@
 """Database configuration for Neo4j connection."""
 
+import logging
 import os
 import threading
 
@@ -7,6 +8,10 @@ from neo4j import GraphDatabase
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# On a fresh database Neo4j warns about every property that doesn't exist yet
+# (e.g. Stock.price before the first price job). Keep real errors only.
+logging.getLogger("neo4j.notifications").setLevel(logging.ERROR)
 
 class Neo4jConnection:
     def __init__(self):
