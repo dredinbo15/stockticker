@@ -54,6 +54,16 @@ dashboard_template = """
       <p>Top predictors from last training run</p>
       <span class="badge">GET /api/model/features</span>
     </a>
+    <a class="card" href="/api/model/predictions">
+      <h2>Predictions</h2>
+      <p>Probability each stock beats the median over 5 days</p>
+      <span class="badge">GET /api/model/predictions</span>
+    </a>
+    <a class="card" href="/api/analysis/weather-correlation">
+      <h2>Weather Correlation</h2>
+      <p>City weather vs daily sector returns</p>
+      <span class="badge">GET /api/analysis/weather-correlation</span>
+    </a>
   </div>
 </body>
 </html>

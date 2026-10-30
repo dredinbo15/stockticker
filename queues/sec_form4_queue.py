@@ -19,6 +19,7 @@ class SECForm4Queue:
             'security_title': form4_data.security_title,
             'transaction_type': form4_data.transaction_type,
             'ownership_nature': form4_data.ownership_nature,
-            'form_url': form4_data.form_url
+            'form_url': form4_data.form_url,
+            'filing_date': form4_data.filing_date.isoformat() if form4_data.filing_date else None,
         }
         save_sec_form4.delay(form4_dict)

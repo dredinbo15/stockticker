@@ -9,6 +9,9 @@ dist/
 build/
 .pytest_cache/
 
+# Trained model files
+artifacts/
+
 # Encryption keys and encrypted credentials - KEEP SECURE!
 .credentials_key
 .encrypted_credentials.json

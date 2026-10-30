@@ -14,5 +14,6 @@ class NewsQueue:
             'url': news_article.url,
             'published_date': news_article.published_date.isoformat(),
             'article_hash': news_article.article_hash,
+            'related_stocks': news_article.related_stocks,
         }
         process_raw_news_article.delay(news_dict)

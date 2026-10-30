@@ -235,3 +235,17 @@ class WeatherData:
             )
             return result.single()
 
+    @staticmethod
+    def get_observations(since: str = None):
+        """Return observed (not forecast) readings, optionally since an ISO date."""
+        with get_neo4j_session() as session:
+            query = """
+            MATCH (w:WeatherData)
+            WHERE coalesce(w.record_type, 'observation') = 'observation'
+              AND ($since IS NULL OR w.timestamp >= $since)
+            RETURN w.location AS location, w.timestamp AS timestamp,
+                   w.temperature AS temperature, w.humidity AS humidity
+            ORDER BY w.timestamp
+            """
+            result = session.run(query, since=since)
+            return [record.data() for record in result]

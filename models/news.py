@@ -71,6 +71,17 @@ class NewsArticle:
             return article_node
 
     @staticmethod
+    def is_enriched(article_hash: str) -> bool:
+        """True if this article is already stored with LLM enrichment."""
+        with get_neo4j_session() as session:
+            result = session.run(
+                "MATCH (n:NewsArticle {article_hash: $h}) RETURN n.sentiment IS NOT NULL AS done",
+                h=article_hash,
+            )
+            record = result.single()
+            return bool(record and record["done"])
+
+    @staticmethod
     def get_news_by_stock(symbol: str, limit: int = 20):
         with get_neo4j_session() as session:
             query = """

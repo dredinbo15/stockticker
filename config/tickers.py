@@ -83,6 +83,25 @@ SYMBOL_CIK_MAP = {
 # List of all ticker symbols (50 total)
 TICKER_SYMBOLS = sorted(SYMBOL_CIK_MAP.keys())
 
+# Company display names, used to seed Stock.name and to build news queries.
+SYMBOL_NAME_MAP = {
+    "AAPL": "Apple", "MSFT": "Microsoft", "NVDA": "NVIDIA", "AVGO": "Broadcom",
+    "CSCO": "Cisco", "GOOGL": "Alphabet", "META": "Meta Platforms",
+    "NFLX": "Netflix", "DIS": "Disney", "AMZN": "Amazon", "TSLA": "Tesla",
+    "HD": "Home Depot", "NKE": "Nike", "MCD": "McDonald's", "WMT": "Walmart",
+    "PG": "Procter & Gamble", "KO": "Coca-Cola", "COST": "Costco",
+    "JPM": "JPMorgan Chase", "BAC": "Bank of America", "GS": "Goldman Sachs",
+    "V": "Visa", "MA": "Mastercard", "JNJ": "Johnson & Johnson",
+    "UNH": "UnitedHealth", "LLY": "Eli Lilly", "PFE": "Pfizer", "ABBV": "AbbVie",
+    "CAT": "Caterpillar", "BA": "Boeing", "GE": "GE Aerospace",
+    "UPS": "United Parcel Service", "RTX": "RTX", "XOM": "ExxonMobil",
+    "CVX": "Chevron", "COP": "ConocoPhillips", "SLB": "SLB", "LIN": "Linde",
+    "FCX": "Freeport-McMoRan", "NEM": "Newmont", "NEE": "NextEra Energy",
+    "DUK": "Duke Energy", "SO": "Southern Company", "PLD": "Prologis",
+    "AMT": "American Tower", "EQIX": "Equinix", "UNP": "Union Pacific",
+    "CSX": "CSX", "NSC": "Norfolk Southern", "FDX": "FedEx",
+}
+
 # Sector groupings for the tracked tickers — the source of truth for
 # Stock.sector (the SYMBOL_CIK_MAP comments above are illustrative only).
 SECTOR_SYMBOLS = {
@@ -146,10 +165,36 @@ def get_cik_from_symbol(symbol: str) -> str:
 
 def get_symbol_from_cik(cik: str) -> str:
     """Get stock symbol from CIK."""
+    cik = normalize_cik(cik)
     for symbol, c in SYMBOL_CIK_MAP.items():
         if c == cik:
             return symbol
     return None
+
+
+def normalize_symbols(values) -> list:
+    """Clean a list (or comma-separated string) of tickers down to tracked symbols.
+
+    LLM output is inconsistent ("$aapl", "AAPL.O", "Apple"), so uppercase,
+    strip common decorations, and drop anything we don't track.
+    """
+    if not values:
+        return []
+    if isinstance(values, str):
+        values = values.split(",")
+    cleaned = []
+    for value in values:
+        if not isinstance(value, str):
+            continue
+        sym = value.strip().upper().lstrip("$").split(".")[0].split(":")[-1]
+        if sym in SYMBOL_CIK_MAP and sym not in cleaned:
+            cleaned.append(sym)
+    return cleaned
+
+
+def get_name(symbol: str) -> str:
+    """Get the company display name for a stock symbol, or None if untracked."""
+    return SYMBOL_NAME_MAP.get(symbol.upper())
 
 
 def get_sector(symbol: str) -> str:

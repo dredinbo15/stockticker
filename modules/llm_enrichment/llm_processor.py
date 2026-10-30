@@ -12,6 +12,8 @@ import os
 
 from openai import AsyncOpenAI
 
+from config.tickers import normalize_symbols
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,8 +68,8 @@ class LLMProcessor:
     async def enrich_news(self, news_article) -> Dict:
         prompt = f"""
         Analyze the following news article and provide:
-        1. Sentiment analysis (positive, negative, neutral)
-        2. List of stock symbols mentioned or related to the article
+        1. Sentiment analysis: exactly one of "positive", "negative", "neutral"
+        2. List of US stock ticker symbols (e.g. "AAPL") mentioned or related to the article
         3. A brief enriched summary highlighting key financial implications
 
         Article Title: {news_article.title}
@@ -79,9 +81,12 @@ class LLMProcessor:
         try:
             result = await self._generate_json(prompt, max_output_tokens=500)
 
+            sentiment = str(result.get("sentiment", "neutral")).strip().lower()
+            if sentiment not in {"positive", "negative", "neutral"}:
+                sentiment = "neutral"
             return {
-                "sentiment": result.get("sentiment", "neutral"),
-                "related_stocks": result.get("related_stocks", []),
+                "sentiment": sentiment,
+                "related_stocks": normalize_symbols(result.get("related_stocks", [])),
                 "enriched_content": result.get("enriched_content", news_article.content),
             }
         except Exception as exc:
@@ -93,7 +98,7 @@ class LLMProcessor:
             }
 
     async def enrich_8k_report(self, report) -> Dict:
-        content = report.content
+        content = report.content or ""
         if len(content) > 5000:
             content = content[:5000] + "\n\n[...truncated]"
 

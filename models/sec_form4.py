@@ -13,7 +13,8 @@ class SECForm4:
                  reporter_name: str, transaction_date: datetime,
                  transaction_code: str, shares: int, price: float = None,
                  security_title: str = None, transaction_type: str = None,
-                 ownership_nature: str = None, form_url: str = None):
+                 ownership_nature: str = None, form_url: str = None,
+                 filing_date: datetime = None):
         self.issuer_cik = normalize_cik(issuer_cik)
         self.issuer_name = issuer_name
         self.reporter_cik = normalize_cik(reporter_cik)
@@ -26,6 +27,7 @@ class SECForm4:
         self.transaction_type = transaction_type
         self.ownership_nature = ownership_nature
         self.form_url = form_url
+        self.filing_date = filing_date
         self.transaction_key = self._build_transaction_key()
         self.transaction_hash = self._create_hash()
 
@@ -67,6 +69,7 @@ class SECForm4:
                 t.code = $code,
                 t.shares = $shares,
                 t.price = $price
+            SET t.filing_date = coalesce($filing_date, t.filing_date)
             MERGE (r)-[:FILED]->(t)
             MERGE (t)-[:FOR_COMPANY]->(i)
             RETURN t
@@ -85,7 +88,8 @@ class SECForm4:
                                date=self.transaction_date.isoformat(),
                                code=self.transaction_code,
                                shares=self.shares,
-                               price=self.price)
+                               price=self.price,
+                               filing_date=self.filing_date.isoformat() if self.filing_date else None)
             return result.single()
 
     @staticmethod

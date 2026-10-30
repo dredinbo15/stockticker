@@ -1,6 +1,7 @@
 """Database configuration for Neo4j connection."""
 
 import os
+import threading
 
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
@@ -12,25 +13,33 @@ class Neo4jConnection:
         self.uri = os.getenv('NEO4J_URI', "bolt://localhost:7687")
         self.user = os.getenv('NEO4J_USER', "neo4j")
         self.password = os.getenv('NEO4J_PASSWORD')
-        if not self.password:
-            raise EnvironmentError("NEO4J_PASSWORD not found in environment variables.")
         self.driver = None
+        self._lock = threading.Lock()
 
     def connect(self):
-        self.driver = GraphDatabase.driver(
-            self.uri,
-            auth=(self.user, self.password),
-            max_connection_pool_size=50,
-        )
-        self.driver.verify_connectivity()
+        with self._lock:
+            if self.driver is not None:
+                return
+            if not self.password:
+                raise EnvironmentError("NEO4J_PASSWORD not found in environment variables.")
+            driver = GraphDatabase.driver(
+                self.uri,
+                auth=(self.user, self.password),
+                max_connection_pool_size=50,
+            )
+            driver.verify_connectivity()
+            self.driver = driver
 
     def close(self):
         if self.driver:
             self.driver.close()
+            self.driver = None
 
     def get_session(self):
+        # Connect lazily so processes that never call init_neo4j() (Celery
+        # workers, one-off scripts) can still talk to the database.
         if self.driver is None:
-            raise RuntimeError("Neo4j driver is not connected. Call connect() first.")
+            self.connect()
         return self.driver.session()
 
 # Global connection instance
@@ -46,20 +55,26 @@ def init_neo4j():
         session.run("DROP CONSTRAINT transaction_form_url IF EXISTS")
         session.run("CREATE CONSTRAINT transaction_hash IF NOT EXISTS FOR (t:Transaction) REQUIRE t.transaction_hash IS UNIQUE")
         session.run("CREATE CONSTRAINT eightk_hash IF NOT EXISTS FOR (r:EightKReport) REQUIRE r.report_hash IS UNIQUE")
+        session.run("CREATE CONSTRAINT price_key IF NOT EXISTS FOR (p:PricePoint) REQUIRE p.price_key IS UNIQUE")
         session.run("CREATE INDEX stock_name IF NOT EXISTS FOR (s:Stock) ON (s.name)")
         session.run("CREATE INDEX weather_location IF NOT EXISTS FOR (w:WeatherData) ON (w.location)")
         session.run("CREATE INDEX transaction_date IF NOT EXISTS FOR (t:Transaction) ON (t.date)")
-        # Seed the tracked tickers as Stock nodes (with their sector) so news
-        # MENTIONS edges and the model's (s:Stock) matches have something to
-        # attach to before any price-collection job has run.
-        from config.tickers import SYMBOL_SECTOR_MAP
+        session.run("CREATE INDEX price_date IF NOT EXISTS FOR (p:PricePoint) ON (p.date)")
+        # Seed the tracked tickers as Stock nodes (with their sector and name)
+        # so news MENTIONS edges and the model's (s:Stock) matches have
+        # something to attach to before any price-collection job has run.
+        from config.tickers import SYMBOL_NAME_MAP, SYMBOL_SECTOR_MAP
         session.run(
             """
             UNWIND $rows AS row
             MERGE (s:Stock {symbol: row.symbol})
-            SET s.sector = coalesce(s.sector, row.sector)
+            SET s.sector = coalesce(s.sector, row.sector),
+                s.name = coalesce(s.name, row.name)
             """,
-            rows=[{"symbol": sym, "sector": sec} for sym, sec in SYMBOL_SECTOR_MAP.items()],
+            rows=[
+                {"symbol": sym, "sector": sec, "name": SYMBOL_NAME_MAP.get(sym)}
+                for sym, sec in SYMBOL_SECTOR_MAP.items()
+            ],
         )
 
 def get_neo4j_session():

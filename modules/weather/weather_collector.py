@@ -18,14 +18,22 @@ logger = logging.getLogger(__name__)
 class WeatherModule:
     def __init__(self):
         self.api_key = os.getenv('OPENWEATHER_API_KEY')
-        self.base_url = "http://api.openweathermap.org/data/2.5/weather"
+        self.base_url = "https://api.openweathermap.org/data/2.5/weather"
+        self.forecast_url = "https://api.openweathermap.org/data/2.5/forecast"
         self.queue = WeatherQueue()
 
     def fetch_weather(self, city: str) -> dict:
+        return self._get(self.base_url, city)
+
+    def fetch_forecast(self, city: str) -> dict:
+        """5-day forecast in 3-hour steps (free OpenWeather endpoint)."""
+        return self._get(self.forecast_url, city)
+
+    def _get(self, url: str, city: str) -> dict:
         params = {"q": city, "appid": self.api_key, "units": "metric"}
         for attempt in range(3):
             try:
-                response = requests.get(self.base_url, params=params, timeout=10)
+                response = requests.get(url, params=params, timeout=10)
                 response.raise_for_status()
                 return response.json()
             except requests.RequestException as e:

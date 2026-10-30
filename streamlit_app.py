@@ -4,8 +4,9 @@ from models.stock import Stock
 from models.news import NewsArticle
 from models.sec_form4 import SECForm4
 from models.sec_8k import SEC8K
-from modules.modeling.xgboost_model import XGBoostModel
-from config.tickers import SYMBOL_CIK_MAP, SYMBOL_SECTOR_MAP
+from modules.analysis.weather_correlation import WeatherCorrelationAnalyzer
+from modules.modeling.xgboost_model import HORIZON_DAYS, XGBoostModel
+from config.tickers import SYMBOL_CIK_MAP, SYMBOL_NAME_MAP, SYMBOL_SECTOR_MAP
 
 
 def node_to_dict(node):
@@ -86,8 +87,11 @@ def render_8k_reports(reports):
 
 @st.cache_resource
 def get_xgboost_model():
+    # Loads the model saved by the API or the scheduled Celery job; only
+    # trains here if nothing has been saved yet.
     model = XGBoostModel()
-    model.train_model()
+    if model.model is None:
+        model.train_model()
     return model
 
 
@@ -128,9 +132,16 @@ def main():
 
     symbols = [stock["symbol"] for stock in filtered_stocks]
     selected_stock = sidebar.selectbox("Select stock symbol", symbols)
-    cik_options = [f"{v} ({k})" for k, v in SYMBOL_CIK_MAP.items()]
-    selected_cik_display = sidebar.selectbox("SEC company (CIK)", cik_options)
-    selected_cik = selected_cik_display.split(" ")[0]  # Extract CIK number
+    # Default the SEC company to the selected stock so the page stays in sync.
+    cik_symbols = list(SYMBOL_CIK_MAP)
+    default_index = cik_symbols.index(selected_stock) if selected_stock in cik_symbols else 0
+    cik_symbol = sidebar.selectbox(
+        "SEC company",
+        cik_symbols,
+        index=default_index,
+        format_func=lambda sym: f"{sym} – {SYMBOL_NAME_MAP.get(sym, sym)} (CIK {SYMBOL_CIK_MAP[sym]})",
+    )
+    selected_cik = SYMBOL_CIK_MAP[cik_symbol]
 
     if selected_stock:
         selected_stock_data = next((s for s in stocks if s["symbol"] == selected_stock), None)
@@ -170,31 +181,56 @@ def main():
     render_8k_reports(reports)
 
     st.subheader("XGBoost Modeling")
+    st.caption(
+        f"Predicts whether each stock beats the median of the tracked universe over the next "
+        f"{HORIZON_DAYS} trading days, from price, news, insider and 8-K features."
+    )
     xgb_model = get_xgboost_model()
+    xgb_model.reload_if_changed()
     if xgb_model.metrics.get("error"):
         st.warning(xgb_model.metrics["error"])
     else:
-        st.metric("Model accuracy", xgb_model.metrics.get("accuracy", 0.0))
+        metrics = xgb_model.metrics
+        cols = st.columns(4)
+        cols[0].metric("Test accuracy", metrics.get("accuracy", 0.0))
+        cols[1].metric("Baseline accuracy", metrics.get("baseline_accuracy", 0.0))
+        cols[2].metric("ROC AUC", metrics.get("roc_auc") if metrics.get("roc_auc") is not None else "—")
+        cols[3].metric("Training rows", metrics.get("train_rows", 0))
+        if metrics.get("test_period"):
+            st.caption(f"Test period: {metrics['test_period'][0]} → {metrics['test_period'][1]} · trained {metrics.get('trained_at', '')}")
 
-        st.markdown("**Training dataset preview**")
-        preview_cols = [
-            c for c in ["symbol", "news_count", "avg_sentiment", "sector"]
-            if c in xgb_model.feature_df.columns
-        ]
-        st.dataframe(xgb_model.feature_df[preview_cols], use_container_width=True)
+        prediction = xgb_model.predict_stock(selected_stock) if selected_stock else None
+        if prediction is not None:
+            st.metric(
+                f"{selected_stock}: probability of beating the median (as of {prediction['as_of']})",
+                f"{prediction['probability']:.0%}",
+            )
+
+        predictions = xgb_model.predict_all()
+        if predictions is not None and not predictions.empty:
+            st.markdown("**Latest predictions**")
+            st.dataframe(predictions, use_container_width=True, hide_index=True)
 
         importances = xgb_model.get_feature_importances()
-        if not importances.empty:
+        if importances is not None and not importances.empty:
             st.markdown("**Feature importances**")
-            importance_chart = importances.set_index("feature")
-            st.bar_chart(importance_chart)
+            st.bar_chart(importances.set_index("feature"))
 
-        predicted = xgb_model.predict_stock(selected_stock)
-        if predicted is not None:
-            st.metric("Predicted insider buy signal", "Yes" if predicted == 1 else "No")
+    st.subheader("Weather vs Sector Returns")
+    try:
+        correlations = WeatherCorrelationAnalyzer().run()
+    except Exception as exc:
+        correlations = []
+        st.warning(f"Could not compute weather correlations: {exc}")
+    if correlations:
+        st.caption("Pearson correlation between each city's daily weather and equal-weighted sector returns. Exploratory — check n_days.")
+        st.dataframe(correlations[:25], use_container_width=True, hide_index=True)
+    else:
+        st.info("Not enough overlapping weather and price days yet (need at least 10). Weather is collected every 3 hours by Celery beat.")
 
     if st.button("Retrain XGBoost model"):
-        get_xgboost_model.clear()
+        with st.spinner("Training..."):
+            get_xgboost_model().train_model()
         rerun_app()
 
     if st.button("Refresh data"):

@@ -1,0 +1,63 @@
+# Full stack: Neo4j, Redis, API, Celery worker + beat scheduler, Streamlit.
+#   cp .env.example .env   # fill in API keys and NEO4J_PASSWORD
+#   docker compose up --build
+x-app: &app
+  build: .
+  env_file: .env
+  environment:
+    NEO4J_URI: bolt://neo4j:7687
+    REDIS_URL: redis://redis:6379/0
+    MODEL_PATH: /app/artifacts/xgb_model.joblib
+  volumes:
+    - model-artifacts:/app/artifacts
+  depends_on:
+    neo4j:
+      condition: service_healthy
+    redis:
+      condition: service_started
+  restart: unless-stopped
+
+services:
+  neo4j:
+    image: neo4j:5
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env}
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#neo4j/}\" 'RETURN 1' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  api:
+    <<: *app
+    command: python main.py
+    ports:
+      - "8000:8000"
+
+  worker:
+    <<: *app
+    command: celery -A queues.celery_app worker --loglevel=info
+
+  beat:
+    <<: *app
+    command: celery -A queues.celery_app beat --loglevel=info --schedule /tmp/celerybeat-schedule
+
+  streamlit:
+    <<: *app
+    command: streamlit run streamlit_app.py --server.address 0.0.0.0 --server.port 8501
+    ports:
+      - "8501:8501"
+
+volumes:
+  neo4j-data:
+  model-artifacts:
